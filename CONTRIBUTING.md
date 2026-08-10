@@ -58,6 +58,10 @@ build, test, then `semantic-release` (config in `.releaserc.json`) computes the 
 commits since the last release tag, publishes to npm, and creates a GitHub release with generated
 notes.
 
-Requires an `NPM_TOKEN` secret (an npm automation token with publish access to `@myceliumhq`) on
-this repo or inherited from an org-level secret -- releases fail cleanly with a clear error until
-that's configured.
+Publishing uses npm's [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) --
+no token secret. `@myceliumhq/ppl` on npmjs.com must have a Trusted Publisher configured under
+Settings → Trusted Publishing pointing at this exact repo and workflow filename
+(`myceliumhq/ppl`, `.github/workflows/release.yml`) -- npm validates against *this* file, not the
+shared reusable workflow it calls into, so a renamed/moved workflow file needs updating there too.
+Both this file's job and the shared workflow must grant `permissions: id-token: write`, or the
+OIDC token can't be minted.

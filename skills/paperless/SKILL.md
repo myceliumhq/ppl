@@ -56,7 +56,5 @@ config error.
 
 ## No shell available?
 
-The same functionality is also exposed as OpenClaw agent tools (`paperless_search_documents`,
-`paperless_get_document`, `paperless_search_document_content`, `paperless_read_document`,
-`paperless_list_taxonomy`, `paperless_update_document`, etc.) and as a standalone MCP server --
-see the package README for both.
+The same functionality is also exposed as a standalone MCP server -- see the package README for
+setup and its tool list.

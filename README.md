@@ -10,34 +10,33 @@ UI.
 Built for coding agents: token-cheap `--help`, deterministic exit codes, file-path-based
 upload/download I/O, no interactive prompts.
 
-An [OpenClaw](https://docs.openclaw.ai) plugin and a standalone [MCP](https://modelcontextprotocol.io)
-server are also included, for hosts without a shell.
+A standalone [MCP](https://modelcontextprotocol.io) server is also included, for hosts without a
+shell.
 
-## Install
+## Use
 
-```bash
-npm install --global @myceliumhq/ppl
-```
-
-## Configure
+No install step needed -- `npx` fetches and caches it on first run:
 
 ```bash
 export PAPERLESS_URL=https://paperless.example.com
 export PAPERLESS_TOKEN=your-api-token  # Settings -> My Profile -> API Token
-ppl doctor
+
+npx @myceliumhq/ppl doctor
+npx @myceliumhq/ppl search "invoice 2026"
+npx @myceliumhq/ppl doc get 42
+npx @myceliumhq/ppl doc content 42
+npx @myceliumhq/ppl doc set 42 --correspondent 7 --tag +5,-3
+npx @myceliumhq/ppl doc download 42 --out invoice.pdf
+npx @myceliumhq/ppl upload ./invoice.pdf --correspondent 7
+npx @myceliumhq/ppl tag list --contains insurance
 ```
 
-## Use
+Prefer a global install to skip `npx`'s resolve step on every call (or if you're scripting many
+invocations in a loop):
 
 ```bash
-ppl --help
-ppl search "invoice 2026"
-ppl doc get 42
-ppl doc content 42
-ppl doc set 42 --correspondent 7 --tag +5,-3
-ppl doc download 42 --out invoice.pdf
-ppl upload ./invoice.pdf --correspondent 7
-ppl tag list --contains insurance
+npm install --global @myceliumhq/ppl
+ppl doctor
 ```
 
 See `ppl <command> --help` for flags on any command, or the bundled skill
@@ -77,27 +76,6 @@ PAPERLESS_URL=https://paperless.example.com PAPERLESS_TOKEN=your-api-token pnpm 
 ```
 
 A `Dockerfile` is included for building a container image locally.
-
-## OpenClaw plugin
-
-Installed via npm (above), then point OpenClaw at the installed package's directory. Configure it:
-
-```json
-{
-  "plugins": {
-    "entries": {
-      "paperless-ngx": {
-        "config": {
-          "baseUrl": "https://paperless.example.com",
-          "apiToken": "your-api-token"
-        }
-      }
-    }
-  }
-}
-```
-
-`apiToken` also accepts a [SecretRef](https://docs.openclaw.ai/cli/config) instead of a plain string.
 
 ## Development
 

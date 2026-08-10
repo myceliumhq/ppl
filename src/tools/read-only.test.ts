@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import manifest from "../../openclaw.plugin.json" with { type: "json" };
+import { createAllTools } from "../mcp-server.js";
 import { filterReadOnlyTools, READ_ONLY_TOOL_NAMES, WRITE_TOOL_NAMES } from "./read-only.js";
 
 // The filter only ever looks at `.name`, so a stub with a name is a faithful
@@ -54,13 +54,13 @@ describe("filterReadOnlyTools", () => {
 });
 
 describe("read-only tool classification", () => {
-  // openclaw.plugin.json's contracts.tools is the app's full tool list, and
-  // manifest.test.ts already pins it to what src/index.ts registers. The
-  // standalone server (src/mcp-server.ts) builds the same set from the same
-  // factories, so the manifest is usable here as the universe of tool names
-  // without importing mcp-server.ts -- which can't be imported from a test
-  // anyway, since it runs main() on load.
-  const allToolNames: string[] = manifest.contracts.tools;
+  // createAllTools() (mcp-server.ts) is the app's real, complete tool list --
+  // stub handles here since none of these factories need a live client to
+  // construct, only to execute(). This is the actual drift-detection
+  // property: a tool added to createAllTools() but never classified here
+  // fails this test instead of shipping unclassified.
+  const neverResolves = new Promise<never>(() => {});
+  const allToolNames = createAllTools(neverResolves, neverResolves).map((tool) => tool.name);
 
   it("classifies every registered tool as either read-only or write", () => {
     const unclassified = allToolNames.filter(

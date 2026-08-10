@@ -1,16 +1,10 @@
 // Read-only mode for the standalone MCP server (PAPERLESS_READ_ONLY=true).
 //
-// This module is deliberately dependency-free -- no `openclaw`, no client,
-// no server -- so the tool partition below can be unit-tested without
-// standing anything up. Everything here is name-based: AnyAgentTool.parameters
-// is a TypeBox TSchema, but a name is a plain string, so nothing in this file
-// needs to touch TypeBox at all.
-//
-// Only the standalone server consults this. The OpenClaw plugin path
-// (src/index.ts + openclaw.plugin.json) registers the full tool set
-// unconditionally: OpenClaw isn't the remote-exposure surface this guards,
-// and its manifest contract is a fixed list that must keep matching what
-// register() registers.
+// This module is deliberately dependency-free -- no client, no server --
+// so the tool partition below can be unit-tested without standing anything
+// up. Everything here is name-based: AnyAgentTool.parameters is a TypeBox
+// TSchema, but a name is a plain string, so nothing in this file needs to
+// touch TypeBox at all.
 
 /**
  * Tools that only ever read from paperless-ngx. This is the exact set the

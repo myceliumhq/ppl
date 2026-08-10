@@ -8,9 +8,14 @@ import {
   serveHttp,
   serveStdio,
 } from "@myceliumhq/mcp";
+import type { AnyAgentTool } from "./agent-tool.js";
 import { createPaperlessClient, type PaperlessClientHandle } from "./client.js";
 import { isLoopbackHost, readStandaloneConfig, readTransportConfig } from "./mcp-server-config.js";
-import { createSemanticSearchCore, type Logger } from "./semantic/handle.js";
+import {
+  createSemanticSearchCore,
+  type Logger,
+  type SemanticSearchHandle,
+} from "./semantic/handle.js";
 import {
   createGetDocumentTool,
   createReadDocumentTool,
@@ -44,6 +49,27 @@ function defaultIndexPath(): string {
   return path.join(os.homedir(), ".mycelium", "paperless-ngx", "semantic-index.db");
 }
 
+// The complete MCP tool surface -- extracted from main() so a test can
+// import it (with stub handles) and assert against it without triggering
+// main()'s process-level side effects (env parsing, listening, signal
+// handlers). Also the drift-detection source of truth for
+// tools/read-only.ts's classification: every name here must be classified
+// as either read-only or write, and vice versa (see read-only.test.ts).
+export function createAllTools(
+  handlePromise: Promise<PaperlessClientHandle>,
+  semanticHandlePromise: Promise<SemanticSearchHandle>,
+): AnyAgentTool[] {
+  return [
+    createSearchDocumentsTool(handlePromise, semanticHandlePromise),
+    createGetDocumentTool(handlePromise),
+    createReadDocumentTool(handlePromise),
+    createSearchDocumentContentTool(handlePromise),
+    createUpdateDocumentTool(handlePromise),
+    createListTaxonomyTool(handlePromise),
+    createCreateTaxonomyTermTool(handlePromise),
+  ];
+}
+
 async function main(): Promise<void> {
   const logger = stderrLogger();
   const config = readStandaloneConfig(process.env);
@@ -59,8 +85,7 @@ async function main(): Promise<void> {
     {
       config: config.semanticSearch,
       logger,
-      // No SecretRef concept exists outside OpenClaw's config system -- an
-      // env var is already either a plain string or nothing.
+      // An env var is already either a plain string or nothing.
       resolveApiKey: async (value) =>
         typeof value === "string" && value.length > 0 ? value : undefined,
       defaultIndexPath,
@@ -69,15 +94,7 @@ async function main(): Promise<void> {
     handlePromise,
   );
 
-  const allTools = [
-    createSearchDocumentsTool(handlePromise, semanticHandlePromise),
-    createGetDocumentTool(handlePromise),
-    createReadDocumentTool(handlePromise),
-    createSearchDocumentContentTool(handlePromise),
-    createUpdateDocumentTool(handlePromise),
-    createListTaxonomyTool(handlePromise),
-    createCreateTaxonomyTermTool(handlePromise),
-  ];
+  const allTools = createAllTools(handlePromise, semanticHandlePromise);
 
   // PAPERLESS_READ_ONLY=true is a hard trim, not a soft flag: the write tools
   // are never handed to createMcpServer, so they never show up in tools/list
@@ -145,7 +162,13 @@ async function main(): Promise<void> {
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? (err.stack ?? err.message) : String(err));
-  process.exit(1);
-});
+// Only run main() when this file is executed directly (node dist/mcp-server.js),
+// not when imported for its createAllTools export -- e.g. read-only.test.ts
+// imports this module to get the real tool list without wanting to boot a
+// server or parse env vars as a side effect.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error(err instanceof Error ? (err.stack ?? err.message) : String(err));
+    process.exit(1);
+  });
+}

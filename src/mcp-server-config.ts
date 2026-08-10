@@ -133,9 +133,8 @@ export function isLoopbackHost(host: string): boolean {
   return ["127.0.0.1", "localhost", "::1"].includes(host.toLowerCase());
 }
 
-// No SecretRef concept exists outside OpenClaw's config system -- an env
-// var is already either a plain string or unset, so embedding.apiKey is
-// read the same way baseUrl/model/etc. are.
+// An env var is already either a plain string or unset, so embedding.apiKey
+// is read the same way baseUrl/model/etc. are.
 function readSemanticSearchConfig(env: NodeJS.ProcessEnv): SemanticSearchPluginConfig | undefined {
   const enabled = parseBoolEnv(env, "PAPERLESS_SEMANTIC_SEARCH_ENABLED");
   if (enabled === false) {

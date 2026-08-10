@@ -1,7 +1,7 @@
 {
   "name": "@myceliumhq/ppl",
   "version": "0.1.0",
-  "description": "Agent-facing CLI for paperless-ngx. Also ships an OpenClaw plugin and a standalone MCP server for shell-less hosts.",
+  "description": "Agent-facing CLI for paperless-ngx. Also ships a standalone MCP server for shell-less hosts.",
   "type": "module",
   "packageManager": "pnpm@11.20.0",
   "license": "MIT",
@@ -12,8 +12,6 @@
     "cli",
     "agent",
     "mcp",
-    "openclaw",
-    "openclaw-plugin",
     "paperless-ngx",
     "paperless",
     "document-management"
@@ -25,22 +23,7 @@
     "type": "git",
     "url": "git+https://github.com/myceliumhq/ppl.git"
   },
-  "openclaw": {
-    "extensions": [
-      "./dist/index.js"
-    ],
-    "compat": {
-      "openclaw": ">=2026.7.0",
-      "pluginApi": ">=2026.7.0"
-    }
-  },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
     "./semantic-adapter": {
       "types": "./dist/semantic-adapter.d.ts",
       "default": "./dist/semantic-adapter.js"
@@ -51,8 +34,7 @@
   },
   "files": [
     "dist",
-    "skills",
-    "openclaw.plugin.json"
+    "skills"
   ],
   "scripts": {
     "build": "tsc",
@@ -63,14 +45,6 @@
     "test": "vitest run",
     "start:mcp": "node dist/mcp-server.js",
     "prepublishOnly": "pnpm run build && pnpm run test"
-  },
-  "peerDependencies": {
-    "openclaw": ">=2026.7.0"
-  },
-  "peerDependenciesMeta": {
-    "openclaw": {
-      "optional": true
-    }
   },
   "dependencies": {
     "@myceliumhq/toolkit": "^0.1.0",

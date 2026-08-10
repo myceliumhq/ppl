@@ -12,12 +12,11 @@ import type { PaperlessClientHandle } from "../client.js";
 import { createPaperlessSourceAdapter } from "./source-adapter.js";
 import type { SemanticMatch } from "./types.js";
 
-// Host-agnostic on purpose: no import here reaches into `openclaw` at all
-// (not even a type import), so this module is safe to pull into the
-// standalone MCP server's module graph (../mcp-server.ts) without dragging
-// openclaw in as a runtime dependency of a plain `node dist/mcp-server.js`
-// install. The OpenClaw-specific plugin adapter lives in
-// ./handle-openclaw.ts instead -- see its own comment.
+// Host-agnostic: `resolveApiKey` is the plain-string identity function in
+// practice (../mcp-server.ts's only caller, reading from an env var). The
+// `apiKey?: unknown` field below is kept untyped-as-string on purpose, so a
+// future host with its own secret-reference concept can plug in here
+// without a breaking type change.
 
 // How often a background incremental sync pass runs. Not part of
 // @myceliumhq/index's own config surface -- it doesn't manage scheduling
@@ -33,9 +32,9 @@ export type SemanticSearchEmbeddingConfig = {
   // /v1/embeddings endpoint -- OpenAI, OpenRouter, Ollama, vLLM, LM
   // Studio, ...). Unused for "local".
   baseUrl?: string;
-  // A plain string, or (only when resolved via the OpenClaw adapter in
-  // ./handle-openclaw.ts) a SecretRef object -- see
-  // SemanticSearchHostDeps.resolveApiKey.
+  // A plain string in practice -- typed `unknown` so a future host with
+  // its own secret-reference concept can still plug in without a breaking
+  // type change.
   apiKey?: unknown;
   model?: string;
   dimensions?: number;
@@ -74,14 +73,12 @@ function unavailableHandle(): SemanticSearchHandle {
 }
 
 // Everything the setup logic below needs from whatever is hosting it.
-// @myceliumhq/index and @myceliumhq/embed already have no OpenClaw dependency;
-// this is the seam that keeps this module the same way.
 export type SemanticSearchHostDeps = {
   config: SemanticSearchPluginConfig | undefined;
   // Resolves whatever `embedding.apiKey` actually is to a plain string (or
-  // undefined if it can't be). ./handle-openclaw.ts resolves SecretRef
-  // objects here; a standalone host has no SecretRef concept and can just
-  // hand the value back when it's already a string.
+  // undefined if it can't be). ../mcp-server.ts just hands the value back
+  // when it's already a string -- an env var has no secret-reference
+  // concept to resolve.
   resolveApiKey: (value: unknown) => Promise<string | undefined>;
   logger: Logger;
   defaultIndexPath: () => string;
@@ -126,8 +123,7 @@ async function resolveEmbeddingProvider(
   return createEmbeddingProvider(config);
 }
 
-// The host-agnostic setup logic, shared by every host (OpenClaw plugin,
-// standalone MCP server, ...): resolves an embedding provider, opens the
+// The host-agnostic setup logic: resolves an embedding provider, opens the
 // index, wires up periodic sync. Never throws -- resolves to an
 // unavailable handle on any failure so a caller can fail open to
 // lexical-only search.

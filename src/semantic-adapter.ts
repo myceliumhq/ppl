@@ -2,9 +2,8 @@ import type { SourceAdapter } from "@myceliumhq/index";
 import { createPaperlessClient } from "./client.js";
 import { createPaperlessSourceAdapter } from "./semantic/source-adapter.js";
 
-// Public, OpenClaw-agnostic entrypoint for external hosts (a generic
-// semanticd sidecar) that want to sync this source without depending on
-// the OpenClaw plugin registration in ./index.ts.
+// Public entrypoint for external hosts (a generic semanticd sidecar) that
+// want to sync this source.
 export {
   createPaperlessClient,
   type PaperlessClient,
