@@ -1,0 +1,10 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    uses: myceliumhq/.github/.github/workflows/node-release.yml@main
+    secrets: inherit

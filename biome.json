@@ -1,0 +1,14 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
+  "extends": ["@myceliumhq/dev-config/biome.json"],
+  "files": {
+    "includes": ["src/**", "scripts/**", "*.json"]
+  },
+  "overrides": [
+    {
+      "includes": ["src/generated/**"],
+      "linter": { "enabled": false },
+      "formatter": { "enabled": false }
+    }
+  ]
+}

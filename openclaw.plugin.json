@@ -1,0 +1,78 @@
+{
+  "id": "paperless-ngx",
+  "name": "paperless-ngx",
+  "description": "Tools for retrieving (search, read, pattern-search) and updating documents in a paperless-ngx instance.",
+  "version": "1.4.0",
+  "skills": ["./skills"],
+  "configSchema": {
+    "type": "object",
+    "required": ["baseUrl", "apiToken"],
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "format": "uri",
+        "description": "Base URL of the paperless-ngx instance, e.g. https://paperless.example.com"
+      },
+      "apiToken": {
+        "type": ["string", "object"],
+        "description": "paperless-ngx API token, as a plain string or a SecretRef object"
+      },
+      "semanticSearch": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Enable the local semantic search index that hybridizes paperless_search_documents' `search` results. Defaults to true; the plugin still fails open to lexical-only search if the runtime/environment can't support it (e.g. Node <22.5, no node:sqlite) even when this is left enabled."
+          },
+          "indexPath": {
+            "type": "string",
+            "description": "Filesystem path for the plugin-owned SQLite+sqlite-vec index file. Defaults under ~/.openclaw/plugins/paperless-ngx/. The file is fully rebuildable from paperless-ngx content, so it never needs its own backup strategy beyond copying this one file."
+          },
+          "embedding": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": ["openai-compatible", "local"],
+                "description": "Embedding backend to use. Defaults to \"openai-compatible\". \"local\" runs a small ONNX model on-CPU via @myceliumhq/embed, with zero API dependency, but is never chosen automatically -- opt in explicitly if you want document content to never leave the machine."
+              },
+              "baseUrl": {
+                "type": "string",
+                "description": "Base URL of an OpenAI-compatible embeddings endpoint, e.g. \"https://openrouter.ai/api/v1\". Required when provider is \"openai-compatible\" (the default); unused for \"local\"."
+              },
+              "apiKey": {
+                "type": ["string", "object"],
+                "description": "API key for the embedding endpoint, as a plain string or a SecretRef object. Required for semantic search to do anything with the default openai-compatible provider -- OCR content is sent to that endpoint to embed it. Without this (and no provider: \"local\"), paperless_search_documents silently stays lexical-only."
+              },
+              "model": {
+                "type": "string",
+                "description": "Embedding model id. Required for the openai-compatible provider (models vary by endpoint, so there's no universal default); optional for \"local\" (defaults to a small bundled ONNX model)."
+              },
+              "dimensions": {
+                "type": "integer",
+                "description": "Embedding vector width, must match what the configured model actually produces. Required for the openai-compatible provider; optional for \"local\" (defaults to 384, matching its default model)."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "uiHints": {
+    "apiToken": {
+      "sensitive": true,
+      "label": "API token"
+    }
+  },
+  "contracts": {
+    "tools": [
+      "paperless_search_documents",
+      "paperless_get_document",
+      "paperless_read_document",
+      "paperless_search_document_content",
+      "paperless_update_document",
+      "paperless_list_taxonomy",
+      "paperless_create_taxonomy_term"
+    ]
+  }
+}
