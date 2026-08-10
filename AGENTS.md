@@ -1,5 +1,13 @@
 # AGENTS.md
 
+## Using this CLI
+
+No install needed for one-off use: `npx @myceliumhq/ppl <command>`. Needs `PAPERLESS_URL` and
+`PAPERLESS_TOKEN` set (an API token from paperless-ngx's Settings -> My Profile -> API Token).
+Read `skills/paperless/SKILL.md` first for the command reference and decision guidance instead of
+discovering it via `--help` alone -- it also covers safety rules (never write without being
+asked, never guess between multiple matches).
+
 @README.md has what this package does and how end users configure it.
 @CONTRIBUTING.md has full dev setup, the commit convention, and the release process — read it before committing or touching CI.
 
