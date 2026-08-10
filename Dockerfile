@@ -1,5 +1,5 @@
-# Standalone MCP server image for ppl (src/mcp-server.ts) -- no OpenClaw
-# involved, see AGENTS.md and README's "Standalone MCP server" section.
+# Standalone MCP server image for ppl (src/mcp-server.ts) -- see AGENTS.md
+# and README's "Standalone MCP server" section.
 #
 #   docker build -t ppl-mcp .
 #
@@ -27,8 +27,12 @@
 
 FROM node:22-slim AS build
 RUN corepack enable
+# Without this, pnpm treats node_modules as stale after the later `COPY . .`
+# resets file mtimes (even though content is unchanged) and blocks on an
+# interactive re-install confirmation that has no TTY to answer it.
+ENV CI=true
 WORKDIR /app
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 RUN pnpm install --frozen-lockfile --prod=false
 COPY . .
 RUN pnpm run build
