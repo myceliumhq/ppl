@@ -1,6 +1,8 @@
 import {
   addSubcommand,
+  CliError,
   type Command,
+  EXIT_CODES,
   parseBoundedInt,
   parseId,
   writeJsonLines,
@@ -18,6 +20,18 @@ function collectIds(values: (number | null | undefined)[]): number[] {
   return [...new Set(values.filter((v): v is number => typeof v === "number"))];
 }
 
+// paperless-ngx's created__date__gte/lte take a bare ISO date, not a
+// datetime -- validate the shape here instead of letting a typo'd flag
+// silently become a no-op filter on the wire.
+function parseIsoDate(raw: string, flag: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    throw new CliError(`${flag} must be an ISO date (YYYY-MM-DD)`, {
+      exitCode: EXIT_CODES.usage,
+    });
+  }
+  return raw;
+}
+
 export function registerSearch(program: Command): void {
   addSubcommand(program, "search <query...>")
     .summary("Full-text search over documents.")
@@ -29,6 +43,8 @@ export function registerSearch(program: Command): void {
     .option("--tag <id>", "Filter by tag id.")
     .option("--correspondent <id>", "Filter by correspondent id.")
     .option("--type <id>", "Filter by document type id.")
+    .option("--from <date>", "Only documents with created date >= this ISO date (YYYY-MM-DD).")
+    .option("--to <date>", "Only documents with created date <= this ISO date (YYYY-MM-DD).")
     .option("--json", "Emit JSONL (one result per line) instead of a table.")
     .addHelpText("after", '\nExample: ppl search "invoice 2026"')
     .action(
@@ -39,6 +55,8 @@ export function registerSearch(program: Command): void {
           tag?: string;
           correspondent?: string;
           type?: string;
+          from?: string;
+          to?: string;
           json?: boolean;
         },
       ) => {
@@ -51,6 +69,9 @@ export function registerSearch(program: Command): void {
             ? undefined
             : parseId(options.correspondent, "--correspondent");
         const typeId = options.type === undefined ? undefined : parseId(options.type, "--type");
+        const createdFrom =
+          options.from === undefined ? undefined : parseIsoDate(options.from, "--from");
+        const createdTo = options.to === undefined ? undefined : parseIsoDate(options.to, "--to");
 
         const { client, baseUrl } = resolveClientHandle();
         const result = await unwrapCli(
@@ -61,6 +82,8 @@ export function registerSearch(program: Command): void {
                 tags__id: tagId,
                 correspondent__id: correspondentId,
                 document_type__id: typeId,
+                created__date__gte: createdFrom,
+                created__date__lte: createdTo,
                 page_size: limit,
                 fields: ["id", "title", "correspondent", "document_type", "tags", "created"],
               },
