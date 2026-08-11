@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@myceliumhq/index':
-        specifier: ^0.1.0
-        version: 0.1.0(zod@4.4.3)
+        specifier: ^1.1.1
+        version: 1.1.1(zod@4.4.3)
       '@myceliumhq/mcp':
         specifier: ^0.1.0
         version: 0.1.0(supports-color@10.2.2)(zod@4.4.3)
@@ -507,8 +507,14 @@ packages:
   '@myceliumhq/embed@0.1.0':
     resolution: {integrity: sha512-gvMIu+IkPifeuyJxfXm11UqLHTrJBBtQOK/jLeJ/udZI6z9zoDLwP012eTJC2QL8YzftownhARXcEYuKY4Gy5A==}
 
+  '@myceliumhq/embed@1.0.0':
+    resolution: {integrity: sha512-Qj6BeKbIYOOTc82fFKphOSNh7MgmrED2KyvtixEg7LENOpJaF9HDMInBgDtgpn0yWUlp7SxbdafPBGns34IciA==}
+
   '@myceliumhq/index@0.1.0':
     resolution: {integrity: sha512-K1acb6+JG2ewZ+a/boiDNhdIYUs7BZRDLHhPrKc3jN6nsIfyTc1kLXKuaeHJ3jESFZAFd7DSzMJkRft1CQmLlQ==}
+
+  '@myceliumhq/index@1.1.1':
+    resolution: {integrity: sha512-lQFzV/xqcMQdad8p5Eo1MEX8oElTgr3dALz0dfJkmp7Et7x1xF5jCmQ+iWaJDYL/r7SWHK3uWlvFqh5THt3yFg==}
 
   '@myceliumhq/mcp@0.1.0':
     resolution: {integrity: sha512-oG/h+ukbyIqo0Sq01qBLbEDztJyPnAb1hmaytgj7UGHxebouezTU81lkZ6kou+BKhzHQ/s/tfTwEQKxnKFjAgQ==}
@@ -3102,9 +3108,25 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
+  '@myceliumhq/embed@1.0.0(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/openai-compatible': 3.0.28(zod@4.4.3)
+      ai: 7.0.58(zod@4.4.3)
+    optionalDependencies:
+      '@huggingface/transformers': 4.2.0
+    transitivePeerDependencies:
+      - zod
+
   '@myceliumhq/index@0.1.0(zod@4.4.3)':
     dependencies:
       '@myceliumhq/embed': 0.1.0(zod@4.4.3)
+      sqlite-vec: 0.1.9
+    transitivePeerDependencies:
+      - zod
+
+  '@myceliumhq/index@1.1.1(zod@4.4.3)':
+    dependencies:
+      '@myceliumhq/embed': 1.0.0(zod@4.4.3)
       sqlite-vec: 0.1.9
     transitivePeerDependencies:
       - zod
