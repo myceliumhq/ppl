@@ -87,7 +87,10 @@ describe("createPaperlessSourceAdapter", () => {
     const request = fetchMock.mock.calls[0]?.[0] as Request;
     const url = new URL(request.url);
     expect(url.searchParams.get("modified__gte")).toBe("2026-01-01T00:00:00Z");
-    expect(url.searchParams.get("ordering")).toBe("-modified");
+    // Ascending, not descending -- @myceliumhq/index's sync loop sets its
+    // resumption watermark to the last item of each processed page, which
+    // is only a valid resumption point in ascending order.
+    expect(url.searchParams.get("ordering")).toBe("modified");
   });
 
   it("two documents with identical content hash the same, different content hashes differently", async () => {
@@ -138,6 +141,30 @@ describe("createPaperlessSourceAdapter", () => {
     const content = await sourceAdapter.fetchContent(1);
     expect(content).toBe("cached body");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("listAllIds yields every document id across pages without requesting content", async () => {
+    const routes: Route[] = [
+      {
+        test: (p, m) => p === "/api/documents/" && m === "GET",
+        handle: (req) => {
+          const url = new URL(req.url);
+          expect(url.searchParams.get("fields")).toBe("id");
+          const page = url.searchParams.get("page");
+          if (page === "2") return { count: 3, next: null, results: [{ id: 3 }] };
+          return {
+            count: 3,
+            next: `${BASE_URL}/api/documents/?page=2`,
+            results: [{ id: 1 }, { id: 2 }],
+          };
+        },
+      },
+    ];
+    stubFetch(routes);
+    const sourceAdapter = adapter();
+    const ids = await collect(sourceAdapter.listAllIds?.() ?? (async function* () {})());
+
+    expect(ids).toEqual([1, 2, 3]);
   });
 
   it("fetchContent falls back to a direct request when nothing is cached", async () => {
