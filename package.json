@@ -1,6 +1,6 @@
 {
   "name": "@myceliumhq/ppl",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "Agent-facing CLI for paperless-ngx. Also ships a standalone MCP server for shell-less hosts.",
   "type": "module",
   "packageManager": "pnpm@11.20.0",
