@@ -9,6 +9,10 @@ description: "Search and read the user's paperless-ngx documents with the `ppl` 
 `PAPERLESS_URL`/`PAPERLESS_TOKEN` env vars -- run `ppl doctor` first if a command fails with a
 config error.
 
+Run `ppl` directly if it's on PATH (`command -v ppl`). Only if it isn't, fall back to
+`npx @myceliumhq/ppl` -- substitute that prefix for `ppl` in every command below, otherwise
+identical.
+
 ## Commands
 
 | Command | Use it for |

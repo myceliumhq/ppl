@@ -15,29 +15,27 @@ shell.
 
 ## Use
 
-No install step needed -- `npx` fetches and caches it on first run:
-
-```bash
-export PAPERLESS_URL=https://paperless.example.com
-export PAPERLESS_TOKEN=your-api-token  # Settings -> My Profile -> API Token
-
-npx @myceliumhq/ppl doctor
-npx @myceliumhq/ppl search "invoice 2026"
-npx @myceliumhq/ppl doc get 42
-npx @myceliumhq/ppl doc content 42
-npx @myceliumhq/ppl doc set 42 --correspondent 7 --tag +5,-3
-npx @myceliumhq/ppl doc download 42 --out invoice.pdf
-npx @myceliumhq/ppl upload ./invoice.pdf --correspondent 7
-npx @myceliumhq/ppl tag list --contains insurance
-```
-
-Prefer a global install to skip `npx`'s resolve step on every call (or if you're scripting many
-invocations in a loop):
+Install globally so `ppl` is a plain command on PATH -- the resolve/download-check `npx` does on
+every single call adds up fast across an agent's many small invocations:
 
 ```bash
 npm install --global @myceliumhq/ppl
+
+export PAPERLESS_URL=https://paperless.example.com
+export PAPERLESS_TOKEN=your-api-token  # Settings -> My Profile -> API Token
+
 ppl doctor
+ppl search "invoice 2026"
+ppl doc get 42
+ppl doc content 42
+ppl doc set 42 --correspondent 7 --tag +5,-3
+ppl doc download 42 --out invoice.pdf
+ppl upload ./invoice.pdf --correspondent 7
+ppl tag list --contains insurance
 ```
+
+No install available? Fall back to `npx @myceliumhq/ppl <command>` (fetches and caches on first
+run, same commands otherwise) -- but prefer the global install whenever you can, per above.
 
 See `ppl <command> --help` for flags on any command, or the bundled skill
 (`skills/paperless/SKILL.md`) for the full command reference and decision guidance.
@@ -55,7 +53,7 @@ export PAPERLESS_URL=https://paperless.example.com
 export PAPERLESS_TOKEN=your-api-token
 export EMBEDDING_PROVIDER=local   # zero-API-key CPU model; or openai-compatible, see semanticd's README
 
-npx -p @myceliumhq/ppl ppl-semanticd
+ppl-semanticd   # or: npx -p @myceliumhq/ppl ppl-semanticd
 ```
 
 Or as a container: `ghcr.io/myceliumhq/ppl-semanticd:<version>` (built from `Dockerfile.semanticd`,
@@ -65,7 +63,7 @@ with the sidecar's over HTTP (`GET /query?q=...`) automatically, no separate mod
 
 ```bash
 export PAPERLESS_SEMANTICD_URL=http://localhost:4499
-npx @myceliumhq/ppl search "insurance documents from a trip"
+ppl search "insurance documents from a trip"
 ```
 
 Unset (or the sidecar unreachable), `ppl search` transparently falls back to lexical-only --
