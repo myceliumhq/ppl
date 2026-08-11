@@ -7,6 +7,7 @@ import {
   parseBoundedInt,
   parseId,
   writeJsonLines,
+  writeStderr,
   writeTable,
   writeTruncationNotice,
 } from "@myceliumhq/toolkit";
@@ -38,6 +39,14 @@ type Row = {
   content_snippet?: string;
   content_snippet_start_line?: number;
   content_snippet_end_line?: number;
+  // Only set when semantic fusion actually ran. "semantic" (no lexical hit
+  // at all) is the real no-match proxy an agent should key on -- semantic
+  // similarity scores are NOT a calibrated confidence measure (live-tested:
+  // a nonsense query and a genuinely relevant one can score within ~0.05 of
+  // each other against the same index), so don't threshold on the score
+  // itself, only on whether a lexical hit backs it up.
+  match_source?: "lexical" | "semantic" | "both";
+  semantic_score?: number;
 };
 
 function collectIds(values: (number | null | undefined)[]): number[] {
@@ -98,7 +107,9 @@ export function registerSearch(program: Command): void {
         "content -- use `doc content <id>` to read a specific document. When " +
         "PAPERLESS_SEMANTICD_URL is set (a deployed ppl-semanticd sidecar), results are fused with " +
         "a semantic search pass automatically -- no separate mode to pick, same as the MCP server's " +
-        "paperless_search_documents.",
+        "paperless_search_documents. --json rows then include match_source (lexical/semantic/both); " +
+        "semantic-only results with no lexical backing print a stderr warning (semantic similarity " +
+        "scores are not a calibrated relevance measure).",
     )
     .option("--limit <n>", `Max results, capped at ${MAX_LIMIT}.`, String(DEFAULT_LIMIT))
     .option("--tag <id>", "Filter by tag id.")
@@ -173,12 +184,18 @@ export function registerSearch(program: Command): void {
         >();
         let finalIds: number[];
         let truncated: boolean;
+        // Populated only on a successful semantic pass -- used below to tag
+        // each row's match_source/semantic_score, and to warn when every
+        // result is semantic-only (see the no-lexical-hits check after rows
+        // are built).
+        let semanticIds: number[] = [];
+        const semanticScoreById = new Map<number, number>();
 
         if (useSemantic) {
           try {
             const semanticClient = createSemanticdClient(semanticdUrl as string);
             const semanticMatches = await semanticClient.query(query, limit);
-            const semanticIds = semanticMatches
+            semanticIds = semanticMatches
               .map((match) => Number(match.sourceId))
               .filter((id) => Number.isFinite(id));
             for (const match of semanticMatches) {
@@ -189,6 +206,7 @@ export function registerSearch(program: Command): void {
                   startLine: match.startLine,
                   endLine: match.endLine,
                 });
+                semanticScoreById.set(id, match.score);
               }
             }
 
@@ -244,9 +262,13 @@ export function registerSearch(program: Command): void {
           ),
         ]);
 
+        const lexicalIdSet = new Set(lexicalIds);
+        const semanticIdSet = new Set(semanticIds);
         const rows: Row[] = finalDocs.map((d) => {
           const id = d.id as number;
           const snippet = snippetById.get(id);
+          const inLexical = lexicalIdSet.has(id);
+          const inSemantic = semanticIdSet.has(id);
           return {
             id,
             title: d.title ?? "",
@@ -265,8 +287,34 @@ export function registerSearch(program: Command): void {
                   content_snippet_end_line: snippet.endLine,
                 }
               : {}),
+            ...(useSemantic
+              ? {
+                  match_source: (inLexical && inSemantic
+                    ? "both"
+                    : inLexical
+                      ? "lexical"
+                      : "semantic") as Row["match_source"],
+                  ...(semanticScoreById.has(id)
+                    ? { semantic_score: semanticScoreById.get(id) }
+                    : {}),
+                }
+              : {}),
           };
         });
+
+        // The real no-match signal: fusion still returns nearest-neighbor
+        // semantic hits for nonsense queries (cosine similarity has no
+        // reliable "nothing matches" floor -- verified against the live
+        // index), so zero lexical hits is what actually means "this query
+        // found nothing," not an empty result list.
+        if (useSemantic && lexicalIds.length === 0 && rows.length > 0) {
+          const bestScore = Math.max(...rows.map((r) => r.semantic_score ?? 0));
+          writeStderr(
+            `# no lexical matches for this query -- ${rows.length} semantic-only result(s) shown ` +
+              `(best score ${bestScore.toFixed(3)}). Semantic similarity is not a calibrated ` +
+              "relevance score; verify these are actually relevant before relying on them.",
+          );
+        }
 
         if (options.json) {
           writeJsonLines(rows);

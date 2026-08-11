@@ -71,6 +71,15 @@ npx @myceliumhq/ppl search "insurance documents from a trip"
 Unset (or the sidecar unreachable), `ppl search` transparently falls back to lexical-only --
 nothing to configure to keep using it without a sidecar.
 
+**On "no results":** semantic search has no reliable "nothing matches" signal by itself --
+cosine-similarity nearest-neighbor search always returns *something*, and a nonsense query can
+score within a few hundredths of a genuinely relevant one against the same index (live-tested, not
+theoretical). So the semantic score is not a calibrated confidence measure; don't threshold on it.
+When fusion is active, `--json` rows include `match_source` (`lexical` | `semantic` | `both`) and,
+for semantic hits, `semantic_score` -- and if a query returns results with **zero** lexical hits
+(`match_source` is `semantic` for everything), `ppl search` prints a stderr warning, since that's
+the actual "this query likely found nothing real" signal, not an empty result list.
+
 ## Standalone MCP server
 
 The same functionality also runs outside a shell entirely, as an ordinary MCP server (stdio or
