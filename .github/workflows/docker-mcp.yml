@@ -1,0 +1,37 @@
+name: Docker Publish (mcp)
+
+# Same workflow_run pattern as docker-semanticd.yml -- see its own comment
+# for why this can't just be `on: push: tags:`.
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  check-tag:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+      - id: tag
+        run: echo "tag=$(git tag --points-at HEAD | head -n1)" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: check-tag
+    if: needs.check-tag.outputs.tag != ''
+    permissions:
+      contents: read
+      packages: write
+    uses: myceliumhq/.github/.github/workflows/docker-publish.yml@main
+    with:
+      image: ppl-mcp
+      dockerfile: Dockerfile
+      tag: ${{ needs.check-tag.outputs.tag }}
+      ref: ${{ needs.check-tag.outputs.tag }}
