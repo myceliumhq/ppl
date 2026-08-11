@@ -44,12 +44,6 @@ WORKDIR /app
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/package.json ./package.json
-# The semantic index is the only state this server keeps -- give it a
-# writable, volume-mountable home outside the container's own filesystem
-# rather than defaulting under $HOME (which a non-root user may not own).
-RUN mkdir -p /data && chown node:node /data
-ENV PAPERLESS_SEMANTIC_INDEX_PATH=/data/semantic-index.db
-VOLUME ["/data"]
 EXPOSE 3000
 USER node
 ENTRYPOINT ["node", "dist/mcp-server.js"]

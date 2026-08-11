@@ -42,52 +42,22 @@ describe("readStandaloneConfig", () => {
     expect(config.semanticSearch).toEqual({ enabled: false });
   });
 
-  it("builds a full embedding config from PAPERLESS_EMBEDDING_* vars, parsing dimensions as a number", () => {
+  it("builds semanticSearch from PAPERLESS_SEMANTICD_URL", () => {
     const config = readStandaloneConfig({
       PAPERLESS_BASE_URL: "https://paperless.example.com",
       PAPERLESS_API_TOKEN: "t",
-      PAPERLESS_EMBEDDING_BASE_URL: "https://openrouter.ai/api/v1",
-      PAPERLESS_EMBEDDING_API_KEY: "key",
-      PAPERLESS_EMBEDDING_MODEL: "text-embedding-3-small",
-      PAPERLESS_EMBEDDING_DIMENSIONS: "1536",
+      PAPERLESS_SEMANTICD_URL: "http://ppl-semanticd:4499",
     });
-    expect(config.semanticSearch).toEqual({
-      indexPath: undefined,
-      embedding: {
-        provider: undefined,
-        baseUrl: "https://openrouter.ai/api/v1",
-        apiKey: "key",
-        model: "text-embedding-3-small",
-        dimensions: 1536,
-      },
-    });
+    expect(config.semanticSearch).toEqual({ semanticdUrl: "http://ppl-semanticd:4499" });
   });
 
-  it("passes provider: local through only when explicitly set to a recognized value", () => {
+  it("leaves semanticSearch undefined when PAPERLESS_SEMANTICD_URL is unset even if enabled isn't false", () => {
     const config = readStandaloneConfig({
       PAPERLESS_BASE_URL: "https://paperless.example.com",
       PAPERLESS_API_TOKEN: "t",
-      PAPERLESS_EMBEDDING_PROVIDER: "local",
+      PAPERLESS_SEMANTIC_SEARCH_ENABLED: "true",
     });
-    expect(config.semanticSearch?.embedding?.provider).toBe("local");
-  });
-
-  it("ignores an unrecognized PAPERLESS_EMBEDDING_PROVIDER value", () => {
-    const config = readStandaloneConfig({
-      PAPERLESS_BASE_URL: "https://paperless.example.com",
-      PAPERLESS_API_TOKEN: "t",
-      PAPERLESS_EMBEDDING_PROVIDER: "gemini",
-    });
-    expect(config.semanticSearch?.embedding?.provider).toBeUndefined();
-  });
-
-  it("carries indexPath through even with no embedding config set", () => {
-    const config = readStandaloneConfig({
-      PAPERLESS_BASE_URL: "https://paperless.example.com",
-      PAPERLESS_API_TOKEN: "t",
-      PAPERLESS_SEMANTIC_INDEX_PATH: "/data/index.db",
-    });
-    expect(config.semanticSearch).toEqual({ indexPath: "/data/index.db", embedding: undefined });
+    expect(config.semanticSearch).toBeUndefined();
   });
 
   describe("<VAR>_FILE Docker secrets", () => {
@@ -191,26 +161,6 @@ describe("readStandaloneConfig", () => {
       PAPERLESS_SEMANTIC_SEARCH_ENABLED: "",
     });
     expect(config.semanticSearch).toBeUndefined();
-  });
-
-  it("rejects a non-integer PAPERLESS_EMBEDDING_DIMENSIONS instead of producing NaN", () => {
-    expect(() =>
-      readStandaloneConfig({
-        PAPERLESS_BASE_URL: "https://paperless.example.com",
-        PAPERLESS_API_TOKEN: "t",
-        PAPERLESS_EMBEDDING_DIMENSIONS: "abc",
-      }),
-    ).toThrow('PAPERLESS_EMBEDDING_DIMENSIONS must be a positive integer (got "abc")');
-  });
-
-  it("rejects non-decimal PAPERLESS_EMBEDDING_DIMENSIONS (hex/exponential)", () => {
-    expect(() =>
-      readStandaloneConfig({
-        PAPERLESS_BASE_URL: "https://paperless.example.com",
-        PAPERLESS_API_TOKEN: "t",
-        PAPERLESS_EMBEDDING_DIMENSIONS: "1e3",
-      }),
-    ).toThrow('PAPERLESS_EMBEDDING_DIMENSIONS must be a positive integer (got "1e3")');
   });
 });
 

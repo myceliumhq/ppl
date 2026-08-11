@@ -48,24 +48,6 @@ function parseBoolEnv(env: NodeJS.ProcessEnv, name: string): boolean | undefined
   throw new Error(`${name} must be "true" or "false" (got "${raw}")`);
 }
 
-// Parses a strict positive-integer env value. Only decimal digits are
-// accepted (Number("abc") would be NaN, "12.5" non-integer, "0x10"/"1e3"
-// exotic radixes -- all rejected so a malformed dimensions value can never
-// propagate NaN or a surprising number downstream). Unset/empty yields
-// undefined.
-function parsePositiveIntEnv(env: NodeJS.ProcessEnv, name: string): number | undefined {
-  const raw = env[name];
-  if (raw === undefined || raw === "") return undefined;
-  if (!/^\d+$/.test(raw)) {
-    throw new Error(`${name} must be a positive integer (got "${raw}")`);
-  }
-  const parsed = Number(raw);
-  if (parsed <= 0 || !Number.isSafeInteger(parsed)) {
-    throw new Error(`${name} must be a positive integer (got "${raw}")`);
-  }
-  return parsed;
-}
-
 // Validates an MCP listen port: a decimal integer in the valid TCP range.
 function parsePortEnv(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
   const raw = env[name];
@@ -133,42 +115,16 @@ export function isLoopbackHost(host: string): boolean {
   return ["127.0.0.1", "localhost", "::1"].includes(host.toLowerCase());
 }
 
-// An env var is already either a plain string or unset, so embedding.apiKey
-// is read the same way baseUrl/model/etc. are.
 function readSemanticSearchConfig(env: NodeJS.ProcessEnv): SemanticSearchPluginConfig | undefined {
   const enabled = parseBoolEnv(env, "PAPERLESS_SEMANTIC_SEARCH_ENABLED");
   if (enabled === false) {
     return { enabled: false };
   }
 
-  const provider =
-    env.PAPERLESS_EMBEDDING_PROVIDER === "local" ||
-    env.PAPERLESS_EMBEDDING_PROVIDER === "openai-compatible"
-      ? env.PAPERLESS_EMBEDDING_PROVIDER
-      : undefined;
-  const hasEmbeddingConfig =
-    provider !== undefined ||
-    env.PAPERLESS_EMBEDDING_BASE_URL !== undefined ||
-    env.PAPERLESS_EMBEDDING_API_KEY !== undefined ||
-    env.PAPERLESS_EMBEDDING_MODEL !== undefined ||
-    env.PAPERLESS_EMBEDDING_DIMENSIONS !== undefined;
+  const semanticdUrl = env.PAPERLESS_SEMANTICD_URL;
+  if (!semanticdUrl) return undefined;
 
-  if (!hasEmbeddingConfig && env.PAPERLESS_SEMANTIC_INDEX_PATH === undefined) {
-    return undefined;
-  }
-
-  return {
-    indexPath: env.PAPERLESS_SEMANTIC_INDEX_PATH,
-    embedding: hasEmbeddingConfig
-      ? {
-          provider,
-          baseUrl: env.PAPERLESS_EMBEDDING_BASE_URL,
-          apiKey: env.PAPERLESS_EMBEDDING_API_KEY,
-          model: env.PAPERLESS_EMBEDDING_MODEL,
-          dimensions: parsePositiveIntEnv(env, "PAPERLESS_EMBEDDING_DIMENSIONS"),
-        }
-      : undefined,
-  };
+  return { semanticdUrl };
 }
 
 export function readStandaloneConfig(env: NodeJS.ProcessEnv): StandaloneConfig {

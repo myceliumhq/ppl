@@ -21,16 +21,21 @@ asked, never guess between multiple matches).
 - `src/tools/` — one file per tool group (documents, taxonomy, relations, pagination)
 - `src/client.ts` — typed paperless-ngx API client
 - `src/generated/paperless-schema.d.ts` — generated, do not hand-edit (see CONTRIBUTING.md)
-- `src/semantic/` — wires `@myceliumhq/embed` (pluggable embedding provider) and `@myceliumhq/index`
-  (the actual store/sync/search engine) together; `source-adapter.ts` is the only paperless-specific
-  piece (implements `@myceliumhq/index`'s `SourceAdapter`). Don't reintroduce a local
-  sqlite-vec/embedding-provider implementation here — that duplication is exactly what got extracted
-  into the [toolkit](https://github.com/myceliumhq/toolkit) packages (`@myceliumhq/embed`,
-  `@myceliumhq/index`).
+- `src/semantic/` — `handle.ts` is a thin client of a deployed `ppl-semanticd` sidecar (via
+  `@myceliumhq/semanticd`'s `createSemanticdClient`), not a local embedding/index engine -- this
+  package holds no vector store of its own. `source-adapter.ts` is the paperless-specific piece the
+  sidecar actually syncs against (implements `@myceliumhq/index`'s `SourceAdapter`, consumed via
+  `semantic-adapter.ts`/`semanticd-bin.ts`, not by `handle.ts`). Don't reintroduce a local
+  sqlite-vec/embedding-provider implementation in `handle.ts` -- running that logic twice (once
+  here, once in the sidecar) is exactly the duplication `ppl-semanticd` exists to eliminate.
 - `src/mcp-server.ts` — standalone MCP server entrypoint on `@myceliumhq/mcp` (stdio/HTTP), configured
   via env vars (see README's "Standalone MCP server" section); `createAllTools` there is the app's
   complete tool list, importable by tests without booting a server. `src/mcp-server-config.ts` holds
   the (tested) env-var parsing.
+- `src/semanticd-bin.ts` — the `ppl-semanticd` binary: passes `semantic-adapter.ts`'s
+  `createAdapter()` straight into `@myceliumhq/semanticd`'s `runSemanticd()`. `Dockerfile.semanticd`
+  builds a container image from it, published by `.github/workflows/docker-semanticd.yml` on every
+  tagged release.
 - `skills/` — agent skills bundled with the package
 - `*.test.ts` — colocated with the source they test
 

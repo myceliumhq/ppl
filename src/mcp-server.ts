@@ -1,6 +1,4 @@
 import { createRequire } from "node:module";
-import os from "node:os";
-import path from "node:path";
 import {
   type BridgeableTool,
   createMcpServer,
@@ -45,10 +43,6 @@ function packageVersion(): string {
   return pkg.version;
 }
 
-function defaultIndexPath(): string {
-  return path.join(os.homedir(), ".mycelium", "paperless-ngx", "semantic-index.db");
-}
-
 // The complete MCP tool surface -- extracted from main() so a test can
 // import it (with stub handles) and assert against it without triggering
 // main()'s process-level side effects (env parsing, listening, signal
@@ -80,19 +74,8 @@ async function main(): Promise<void> {
   };
   const handlePromise = Promise.resolve(clientHandle);
 
-  const cleanupFns: Array<() => void | Promise<void>> = [];
-  const semanticHandlePromise = createSemanticSearchCore(
-    {
-      config: config.semanticSearch,
-      logger,
-      // An env var is already either a plain string or nothing.
-      resolveApiKey: async (value) =>
-        typeof value === "string" && value.length > 0 ? value : undefined,
-      defaultIndexPath,
-      registerCleanup: (cleanup) => cleanupFns.push(cleanup),
-    },
-    handlePromise,
-  );
+  const semanticHandle = createSemanticSearchCore({ config: config.semanticSearch, logger });
+  const semanticHandlePromise = Promise.resolve(semanticHandle);
 
   const allTools = createAllTools(handlePromise, semanticHandlePromise);
 
@@ -154,7 +137,7 @@ async function main(): Promise<void> {
 
   const shutdown = async (signal: string) => {
     logger.info?.(`received ${signal}, shutting down`);
-    await Promise.all(cleanupFns.map((cleanup) => cleanup()));
+    await semanticHandle.dispose();
     await httpHandle?.close();
     process.exit(0);
   };

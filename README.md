@@ -45,11 +45,23 @@ See `ppl <command> --help` for flags on any command, or the bundled skill
 ## Semantic search
 
 `ppl search` is full-text/lexical only. Optional semantic search is available as a separate
-sidecar, [`semanticd`](https://github.com/myceliumhq/semanticd) -- run it alongside your
-paperless-ngx instance (using `@myceliumhq/ppl/semantic-adapter` as its
-`SEMANTICD_ADAPTER_MODULE`) and it syncs a local vector index you can query directly over HTTP
-(`GET /query?q=...`). `ppl search` does not call it automatically yet -- that integration is
-planned but not built.
+sidecar, `ppl-semanticd` -- this package's own binary, built on
+[`@myceliumhq/semanticd`](https://github.com/myceliumhq/semanticd) with this repo's paperless-ngx
+adapter wired in directly. Run it alongside your paperless-ngx instance and it syncs a local
+vector index you can query directly over HTTP (`GET /query?q=...`):
+
+```bash
+export PAPERLESS_URL=https://paperless.example.com
+export PAPERLESS_TOKEN=your-api-token
+export EMBEDDING_PROVIDER=local   # zero-API-key CPU model; or openai-compatible, see semanticd's README
+
+npx -p @myceliumhq/ppl ppl-semanticd
+```
+
+Or as a container: `ghcr.io/myceliumhq/ppl-semanticd:<version>` (built from `Dockerfile.semanticd`,
+published on every tagged release). The standalone MCP server below queries a deployed sidecar
+automatically once pointed at it; `ppl search` does not call it yet -- that integration is planned
+but not built.
 
 ## Standalone MCP server
 
@@ -65,6 +77,8 @@ Configuration is env vars instead of a config file:
 | `PAPERLESS_TOKEN` | yes | API token |
 | `PAPERLESS_URL_FILE` / `PAPERLESS_TOKEN_FILE` | no | Docker-secret variants: path to a file whose trimmed contents are used instead |
 | `PAPERLESS_READ_ONLY` | no | Set to exactly `true` to register only read tools -- write tools aren't registered at all, so they can't be listed or called. Not a substitute for authenticating the HTTP transport |
+| `PAPERLESS_SEMANTICD_URL` | no | Base URL of a deployed `ppl-semanticd` sidecar (see "Semantic search" above). Unset falls back to lexical-only search |
+| `PAPERLESS_SEMANTIC_SEARCH_ENABLED` | no | Set to exactly `false` to skip semantic search even if `PAPERLESS_SEMANTICD_URL` is set |
 | `MCP_TRANSPORT` | no | `stdio` (default) or `http` |
 | `MCP_PORT` | no | Only used with `MCP_TRANSPORT=http`; default `3000` |
 | `MCP_HOST` | no | Only used with `MCP_TRANSPORT=http`; default `127.0.0.1` (loopback-only). Set to `0.0.0.0` only behind an authenticated reverse proxy, and only with `MCP_ALLOWED_HOSTS` set (or startup fails) |
@@ -75,7 +89,8 @@ pnpm run build
 PAPERLESS_URL=https://paperless.example.com PAPERLESS_TOKEN=your-api-token pnpm run start:mcp
 ```
 
-A `Dockerfile` is included for building a container image locally.
+A `Dockerfile` is included for building a container image locally (`Dockerfile.semanticd` for the
+semantic search sidecar above).
 
 ## Development
 

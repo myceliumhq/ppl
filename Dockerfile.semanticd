@@ -1,0 +1,45 @@
+# Semantic search sidecar for a paperless-ngx instance (src/semanticd-bin.ts)
+# -- runSemanticd() wired to this repo's own SourceAdapter at compile time,
+# see AGENTS.md and @myceliumhq/semanticd's README.
+#
+#   docker build -f Dockerfile.semanticd -t ppl-semanticd .
+#
+#   docker run --rm -p 4499:4499 \
+#     -e PAPERLESS_URL=https://paperless.example.com \
+#     -e PAPERLESS_TOKEN=your-api-token \
+#     -e EMBEDDING_PROVIDER=local \
+#     ppl-semanticd
+#
+# One process wraps exactly one paperless-ngx instance -- run it as a
+# sidecar next to it, with its own port and index volume. See
+# @myceliumhq/semanticd's README for the full env var list (SEMANTICD_PORT,
+# EMBEDDING_*, ...).
+
+FROM node:22-slim AS build
+RUN corepack enable
+# Without this, pnpm treats node_modules as stale after the later `COPY . .`
+# resets file mtimes (even though content is unchanged) and blocks on an
+# interactive re-install confirmation that has no TTY to answer it.
+ENV CI=true
+WORKDIR /app
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
+RUN pnpm install --frozen-lockfile --prod=false
+COPY . .
+RUN pnpm run build
+RUN pnpm install --frozen-lockfile --prod
+
+FROM node:22-slim AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/package.json ./package.json
+# The vector index is the only state this process keeps -- give it a
+# writable, volume-mountable home outside the container's own filesystem
+# rather than defaulting under $HOME (which a non-root user may not own).
+RUN mkdir -p /data && chown node:node /data
+ENV SEMANTICD_INDEX_PATH=/data/semanticd.db
+VOLUME ["/data"]
+EXPOSE 4499
+USER node
+ENTRYPOINT ["node", "dist/semanticd-bin.js"]
