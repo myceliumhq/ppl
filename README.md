@@ -44,11 +44,11 @@ See `ppl <command> --help` for flags on any command, or the bundled skill
 
 ## Semantic search
 
-`ppl search` is full-text/lexical only. Optional semantic search is available as a separate
+`ppl search` is full-text/lexical by default. Optional semantic search is available as a separate
 sidecar, `ppl-semanticd` -- this package's own binary, built on
 [`@myceliumhq/semanticd`](https://github.com/myceliumhq/semanticd) with this repo's paperless-ngx
 adapter wired in directly. Run it alongside your paperless-ngx instance and it syncs a local
-vector index you can query directly over HTTP (`GET /query?q=...`):
+vector index:
 
 ```bash
 export PAPERLESS_URL=https://paperless.example.com
@@ -59,9 +59,17 @@ npx -p @myceliumhq/ppl ppl-semanticd
 ```
 
 Or as a container: `ghcr.io/myceliumhq/ppl-semanticd:<version>` (built from `Dockerfile.semanticd`,
-published on every tagged release). The standalone MCP server below queries a deployed sidecar
-automatically once pointed at it; `ppl search` does not call it yet -- that integration is planned
-but not built.
+published on every tagged release). Once it's running, point both the CLI and the standalone MCP
+server below at it with `PAPERLESS_SEMANTICD_URL` -- `ppl search` fuses its own lexical results
+with the sidecar's over HTTP (`GET /query?q=...`) automatically, no separate mode to pick:
+
+```bash
+export PAPERLESS_SEMANTICD_URL=http://localhost:4499
+npx @myceliumhq/ppl search "insurance documents from a trip"
+```
+
+Unset (or the sidecar unreachable), `ppl search` transparently falls back to lexical-only --
+nothing to configure to keep using it without a sidecar.
 
 ## Standalone MCP server
 

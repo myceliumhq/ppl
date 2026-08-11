@@ -13,7 +13,7 @@ config error.
 
 | Command | Use it for |
 | --- | --- |
-| `ppl search <query> [--tag/--correspondent/--type id] [--from/--to YYYY-MM-DD] [--limit N]` | Full-text search across OCR content and metadata (fuzzy, ranked). Never returns OCR content. |
+| `ppl search <query> [--tag/--correspondent/--type id] [--from/--to YYYY-MM-DD] [--limit N]` | Full-text search across OCR content and metadata (fuzzy, ranked). Hybrid lexical+semantic automatically when PAPERLESS_SEMANTICD_URL is set -- no separate mode to pick. Never returns OCR content. |
 | `ppl doc get <id>` | Metadata: title, correspondent, type, tags, dates -- names resolved alongside the ids. |
 | `ppl doc content <id>` | Full OCR text to stdout, unbounded. |
 | `ppl doc set <id> [--title/--correspondent/--type/--date/--tag +5,-3]` | Update metadata. `--tag` takes a comma-separated `+<id>`/`-<id>` delta to add/remove tags without disturbing the others. |
