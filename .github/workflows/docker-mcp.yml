@@ -16,9 +16,16 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
+      # Deliberately NOT github.event.workflow_run.head_sha -- live-confirmed
+      # that field is pinned to the commit that TRIGGERED the Release run,
+      # not whatever the release job itself later pushed (its own
+      # @semantic-release/git commit, created mid-run). By the time this
+      # workflow_run fires, that commit -- and the tag pointing at it -- is
+      # already on `main`, so checking out the branch directly is what
+      # actually finds the version tag; head_sha never will.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: main
           fetch-depth: 0
       - id: tag
         run: echo "tag=$(git tag --points-at HEAD | head -n1)" >> "$GITHUB_OUTPUT"

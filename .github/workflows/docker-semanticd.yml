@@ -5,8 +5,9 @@ name: Docker Publish (semanticd)
 # and GitHub never lets a GITHUB_TOKEN-authored push trigger another
 # `on: push` workflow (anti-recursion guard). workflow_run has no such
 # restriction, but also carries no tag of its own, so check-tag resolves
-# "did the just-completed Release run actually create a new tag at its
-# head commit" itself and skips the whole thing if not (a release run that
+# "did main just get a new tag at its current tip" itself (checking out
+# `main` directly, not github.event.workflow_run.head_sha -- see that
+# step's own comment) and skips the whole thing if not (a release run that
 # found nothing to release still completes successfully as a no-op).
 
 on:
@@ -22,9 +23,16 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
+      # Deliberately NOT github.event.workflow_run.head_sha -- live-confirmed
+      # that field is pinned to the commit that TRIGGERED the Release run,
+      # not whatever the release job itself later pushed (its own
+      # @semantic-release/git commit, created mid-run). By the time this
+      # workflow_run fires, that commit -- and the tag pointing at it -- is
+      # already on `main`, so checking out the branch directly is what
+      # actually finds the version tag; head_sha never will.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: main
           fetch-depth: 0
       - id: tag
         run: echo "tag=$(git tag --points-at HEAD | head -n1)" >> "$GITHUB_OUTPUT"
